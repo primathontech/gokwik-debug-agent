@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GoKwik Debug Agent</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+      min-height: 100vh;
+      color: #c9d1d9;
+    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #21262d; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #484f58; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #6e7681; }
+
+    /* Typography */
+    h1 { font-size: 24px; font-weight: 700; color: #f0f6fc; }
+    h2 { font-size: 18px; font-weight: 600; color: #f0f6fc; }
+    h3 { font-size: 14px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Badges - Minimalist */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      line-height: 1.2;
+      vertical-align: middle;
+    }
+    .badge-critical { background: #f8514920; color: #f85149; }
+    .badge-high { background: #d2992220; color: #d29922; }
+    .badge-medium { background: #bb800920; color: #bb8009; }
+    .badge-low { background: #23863620; color: #238636; }
+    .badge-info { background: #388bfd20; color: #388bfd; }
+    .badge-open { background: #f8514915; color: #f85149; }
+    .badge-resolved { background: #3fb95015; color: #3fb950; }
+    .badge-false_positive { background: #8b949e15; color: #8b949e; }
+
+    /* Domain badges - Minimal */
+    .badge-domain { font-size: 9px; padding: 2px 6px; font-weight: 500; }
+    .badge-fe { background: #58a6ff20; color: #58a6ff; }
+    .badge-be { background: #a371f720; color: #a371f7; }
+    .badge-infra { background: #d2992220; color: #d29922; }
+    .badge-3p { background: #8b949e20; color: #8b949e; }
+    .badge-payment { background: #f8514920; color: #f85149; }
+    .badge-shopify { background: #96c63020; color: #96c630; }
+
+    /* Slack status badges - Minimal */
+    .badge-slack { font-size: 9px; padding: 2px 6px; }
+    .badge-slack-sent { background: #3fb95020; color: #3fb950; }
+    .badge-slack-pending { background: #bb800920; color: #bb8009; }
+    .badge-slack-failed { background: #f8514920; color: #f85149; }
+    .badge-slack-skipped { background: #8b949e20; color: #8b949e; }
+
+    /* Buttons */
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: #238636; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #2ea043; }
+    .btn-secondary { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
+    .btn-secondary:hover:not(:disabled) { background: #30363d; border-color: #484f58; }
+    .btn-danger { background: rgba(248,81,73,0.15); color: #f85149; border: 1px solid rgba(248,81,73,0.4); }
+    .btn-danger:hover:not(:disabled) { background: rgba(248,81,73,0.25); }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+    /* Cards */
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 20px;
+      transition: border-color 0.15s ease;
+    }
+    .card:hover { border-color: #484f58; }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #21262d;
+    }
+
+    /* Form elements */
+    input, select, textarea {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #58a6ff; }
+    select {
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      padding-right: 32px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%238b949e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 12px;
+    }
+
+    /* Tables - Minimal */
+    .table-container {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 600;
+      color: #6e7681;
+      background: #0d1117;
+      border-bottom: 1px solid #21262d;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #21262d;
+      vertical-align: middle;
+      font-size: 12px;
+    }
+    tr:hover { background: rgba(56,139,253,0.04); }
+    tr:last-child td { border-bottom: none; }
+
+    /* Impact bar */
+    .impact-bar {
+      width: 40px;
+      height: 4px;
+      background: #21262d;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .impact-fill { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: #0d1117;
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid #30363d;
+    }
+    .tab {
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 6px;
+      color: #8b949e;
+      font-weight: 500;
+      font-size: 13px;
+      transition: all 0.15s ease;
+    }
+    .tab:hover { color: #c9d1d9; background: #21262d; }
+    .tab.active { color: #f0f6fc; background: #21262d; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 20px;
+      overflow-y: auto;
+    }
+    .modal {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 16px;
+      max-width: 800px;
+      width: 100%;
+      max-height: calc(100vh - 80px);
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 20px 24px;
+      border-bottom: 1px solid #30363d;
+      position: sticky;
+      top: 0;
+      background: #161b22;
+      z-index: 10;
+    }
+    .modal-body { padding: 24px; }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 16px 24px;
+      border-top: 1px solid #30363d;
+      background: #0d1117;
+    }
+
+    /* Code blocks */
+    pre {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.5;
+      max-height: 200px;
+    }
+    code { font-family: 'JetBrains Mono', 'SF Mono', monospace; color: #c9d1d9; }
+
+    /* Utilities */
+    .truncate {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Tooltip */
+    .tooltip-wrapper {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+    }
+    .tooltip-content {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      z-index: 1000;
+      background: #1f2428;
+      color: #f0f6fc;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+      max-width: 400px;
+      min-width: 200px;
+      word-wrap: break-word;
+      white-space: normal;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      border: 1px solid #30363d;
+      bottom: calc(100% + 8px);
+      left: 0;
+      transform: translateY(4px);
+      transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+    }
+    .tooltip-content::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 20px;
+      border-width: 6px;
+      border-style: solid;
+      border-color: #1f2428 transparent transparent transparent;
+    }
+    .tooltip-wrapper:hover .tooltip-content {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(0);
+    }
+    /* Tooltip position variants */
+    .tooltip-bottom .tooltip-content {
+      bottom: auto;
+      top: calc(100% + 8px);
+      transform: translateY(-4px);
+    }
+    .tooltip-bottom .tooltip-content::after {
+      top: auto;
+      bottom: 100%;
+      border-color: transparent transparent #1f2428 transparent;
+    }
+    .text-muted { color: #8b949e; }
+    .text-success { color: #3fb950; }
+    .text-danger { color: #f85149; }
+    .text-warning { color: #d29922; }
+    .text-link { color: #58a6ff; text-decoration: none; }
+    .text-link:hover { text-decoration: underline; }
+
+    /* Animations */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .animate-fade { animation: fadeIn 0.2s ease; }
+    .animate-pulse { animation: pulse 2s infinite; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #238636;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 13px;
+      z-index: 999;
+      animation: fadeIn 0.3s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    /* Stat card */
+    .stat-card {
+      background: linear-gradient(135deg, #21262d 0%, #161b22 100%);
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      min-width: 140px;
+    }
+    .stat-value { font-size: 28px; font-weight: 700; color: #f0f6fc; }
+    .stat-label { font-size: 12px; color: #8b949e; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Health indicator */
+    .health-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .health-critical { background: #f85149; box-shadow: 0 0 8px rgba(248,81,73,0.5); }
+    .health-warning { background: #d29922; box-shadow: 0 0 8px rgba(210,153,34,0.5); }
+    .health-good { background: #3fb950; box-shadow: 0 0 8px rgba(63,185,80,0.5); }
+
+    /* Grid layout */
+    .grid { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 768px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    }
+
+    /* Section spacing */
+    .section { margin-bottom: 32px; }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+const API = '/api';
+
+// ─── Utilities ─────────────────────────────────────────
+function timeAgo(ts) {
+  if (!ts) return 'N/A';
+  const diff = Date.now() - new Date(ts).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function impactColor(score) {
+  if (score >= 80) return '#f85149';
+  if (score >= 60) return '#d29922';
+  if (score >= 40) return '#bb8009';
+  return '#238636';
+}
+
+// Domain badge mapping removed - now inline in DomainBadge component
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text);
+}
+
+// ─── Components ────────────────────────────────────────
+
+function Tooltip({ text, children, position = 'top', maxWidth = 400 }) {
+  const needsTooltip = text && text.length > 40;
+  if (!needsTooltip) return children;
+
+  return (
+    <div className={`tooltip-wrapper ${position === 'bottom' ? 'tooltip-bottom' : ''}`}>
+      {children}
+      <div className="tooltip-content" style={{ maxWidth }}>{text}</div>
+    </div>
+  );
+}
+
+function StatCard({ label, value, color, icon }) {
+  return (
+    <div className="stat-card">
+      <div className="stat-value" style={{ color: color || '#f0f6fc' }}>
+        {icon && <span style={{ marginRight: 4 }}>{icon}</span>}
+        {value}
+      </div>
+      <div className="stat-label">{label}</div>
+    </div>
+  );
+}
+
+function SiteCard({ site, onClick, onScan, isScanning, scanningSite }) {
+  const healthClass = site.criticalCount > 0 ? 'health-critical' :
+                      site.totalIncidents > 3 ? 'health-warning' : 'health-good';
+  const isSiteScanning = isScanning && (scanningSite === 'all' || scanningSite === site.name);
+
+  const handleScan = (e) => {
+    e.stopPropagation();
+    if (!isScanning && onScan) {
+      onScan(site.name);
+    }
+  };
+
+  return (
+    <div className="card" onClick={onClick} style={{ cursor: 'pointer', padding: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className={`health-dot ${healthClass}`} />
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f6fc' }}>{site.name}</div>
+            <div className="text-muted" style={{ fontSize: 11 }}>{site.url}</div>
+          </div>
+        </div>
+        <button
+          className={`btn btn-sm ${isSiteScanning ? 'btn-secondary' : 'btn-primary'}`}
+          onClick={handleScan}
+          disabled={isScanning}
+          style={{ padding: '4px 10px', fontSize: 11, minWidth: 60 }}
+        >
+          {isSiteScanning ? 'Scanning' : 'Scan'}
+        </button>
+      </div>
+      <div style={{ display: 'flex', gap: 12, fontSize: 12, alignItems: 'center', paddingLeft: 20 }}>
+        <span style={{ color: '#f0f6fc' }}>{site.totalIncidents} <span className="text-muted">issues</span></span>
+        {site.criticalCount > 0 && <span className="text-danger">{site.criticalCount} critical</span>}
+        <span className="badge" style={{ background: '#21262d', color: '#8b949e', fontSize: 9 }}>{site.environment}</span>
+      </div>
+    </div>
+  );
+}
+
+function DomainBadge({ domain }) {
+  const map = {
+    'FRONTEND': { class: 'badge-fe', label: 'FE' },
+    'BACKEND': { class: 'badge-be', label: 'BE' },
+    'INFRASTRUCTURE': { class: 'badge-infra', label: 'INFRA' },
+    'THIRD_PARTY': { class: 'badge-3p', label: '3P' },
+    'PAYMENT': { class: 'badge-payment', label: 'PAY' },
+    'CDN': { class: 'badge-infra', label: 'CDN' },
+    'SDK': { class: 'badge-fe', label: 'SDK' },
+    'SHOPIFY': { class: 'badge-shopify', label: 'SHOP' },
+  };
+  const { class: cls, label } = map[domain] || { class: 'badge-3p', label: '?' };
+  return <span className={`badge badge-domain ${cls}`}>{label}</span>;
+}
+
+function SlackBadge({ status }) {
+  const map = {
+    sent: 'SENT',
+    pending: 'PENDING',
+    failed: 'FAILED',
+    skipped: 'SKIP',
+  };
+  return <span className={`badge badge-slack badge-slack-${status || 'pending'}`}>{map[status] || 'PENDING'}</span>;
+}
+
+function IncidentRow({ incident, onSelect }) {
+  const sev = incident.classification?.severity || 'medium';
+  const domain = incident.classification?.domain || 'UNKNOWN';
+  const impact = Math.round(incident.impactScore || 0);
+  const slackStatus = incident.slackStatus || 'pending';
+  const fullSummary = incident.errorSummary || '';
+  const displaySummary = fullSummary.length > 50 ? fullSummary.slice(0, 50) + '...' : fullSummary;
+  const affectedPage = incident.affectedPage || '';
+
+  return (
+    <tr onClick={() => onSelect(incident)} style={{ cursor: 'pointer' }}>
+      <td style={{ width: 70, verticalAlign: 'middle' }}>
+        <span className={`badge badge-${sev}`}>{sev.slice(0, 4).toUpperCase()}</span>
+      </td>
+      <td style={{ width: 50, verticalAlign: 'middle' }}>
+        <DomainBadge domain={domain} />
+      </td>
+      <td style={{ maxWidth: 300, verticalAlign: 'middle' }}>
+        <Tooltip text={fullSummary} position="bottom">
+          <div className="truncate" style={{ fontWeight: 500, fontSize: 12, color: '#f0f6fc', maxWidth: 300 }}>
+            {displaySummary}
+          </div>
+        </Tooltip>
+        <Tooltip text={affectedPage} position="bottom">
+          <div className="truncate text-muted" style={{ fontSize: 11, marginTop: 2, maxWidth: 350 }}>
+            {affectedPage}
+          </div>
+        </Tooltip>
+      </td>
+      <td style={{ width: 80, fontSize: 12, verticalAlign: 'middle' }}>{incident.siteName}</td>
+      <td style={{ width: 80, verticalAlign: 'middle' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div className="impact-bar">
+            <div className="impact-fill" style={{ width: `${impact}%`, background: impactColor(impact) }} />
+          </div>
+          <span style={{ fontSize: 10, color: '#8b949e', minWidth: 20 }}>{impact}</span>
+        </div>
+      </td>
+      <td style={{ width: 60, verticalAlign: 'middle' }}>
+        <span className={`badge badge-${incident.status}`}>{incident.status === 'open' ? 'OPEN' : incident.status.slice(0, 4).toUpperCase()}</span>
+      </td>
+      <td style={{ width: 60, verticalAlign: 'middle' }}>
+        <SlackBadge status={slackStatus} />
+      </td>
+      <td style={{ width: 60, fontSize: 11, verticalAlign: 'middle' }} className="text-muted">{timeAgo(incident.timestamp)}</td>
+    </tr>
+  );
+}
+
+function IncidentDetail({ incident, onClose, onJira, onResolve, onResendSlack }) {
+  const cls = incident.classification || {};
+  const sev = cls.severity || 'medium';
+  const domain = cls.domain || 'UNKNOWN';
+  const impact = Math.round(incident.impactScore || 0);
+  const kbMatch = incident.kbMatch;
+  const slackStatus = incident.slackStatus || 'pending';
+  const [resending, setResending] = useState(false);
+
+  const handleResend = async () => {
+    setResending(true);
+    await onResendSlack(incident);
+    setResending(false);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal animate-fade" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+              <span className={`badge badge-${sev}`}>{sev}</span>
+              <DomainBadge domain={domain} />
+              <span className={`badge badge-${incident.status}`}>{incident.status}</span>
+              <SlackBadge status={slackStatus} />
+            </div>
+            <Tooltip text={incident.errorSummary} maxWidth={500}>
+              <h2 style={{ fontSize: 16, maxWidth: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {incident.errorSummary}
+              </h2>
+            </Tooltip>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginLeft: 16 }}>
+            <button className="btn btn-secondary btn-sm" onClick={onClose}>✕</button>
+          </div>
+        </div>
+
+        <div className="modal-body">
+          {/* Stats */}
+          <div className="grid grid-3" style={{ marginBottom: 24 }}>
+            <div className="stat-card" style={{ padding: 16 }}>
+              <div className="stat-value" style={{ fontSize: 24, color: impactColor(impact) }}>{impact}</div>
+              <div className="stat-label">Impact</div>
+            </div>
+            <div className="stat-card" style={{ padding: 16 }}>
+              <div className="stat-value" style={{ fontSize: 24, color: '#58a6ff' }}>{cls.confidence || 0}%</div>
+              <div className="stat-label">Confidence</div>
+            </div>
+            <div className="stat-card" style={{ padding: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f6fc' }}>{cls.category || 'unknown'}</div>
+              <div className="stat-label" style={{ marginTop: 4 }}>Category</div>
+            </div>
+          </div>
+
+          {/* Info */}
+          <div style={{ marginBottom: 20 }}>
+            <h3 style={{ marginBottom: 8 }}>Details</h3>
+            <div className="card" style={{ padding: 16 }}>
+              <div className="grid grid-2" style={{ gap: 12 }}>
+                <div>
+                  <div className="text-muted" style={{ fontSize: 11, marginBottom: 2 }}>SITE</div>
+                  <div style={{ fontSize: 14, fontWeight: 500 }}>{incident.siteName}</div>
+                </div>
+                <div>
+                  <div className="text-muted" style={{ fontSize: 11, marginBottom: 2 }}>ENVIRONMENT</div>
+                  <div style={{ fontSize: 14 }}>{incident.environment}</div>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <div className="text-muted" style={{ fontSize: 11, marginBottom: 2 }}>PAGE</div>
+                  <div style={{ fontSize: 13, wordBreak: 'break-all' }}>{incident.affectedPage}</div>
+                </div>
+                {cls.domainReasoning && (
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <div className="text-muted" style={{ fontSize: 11, marginBottom: 2 }}>CLASSIFICATION REASON</div>
+                    <div style={{ fontSize: 13 }}>{cls.domainReasoning}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* KB Match */}
+          {kbMatch && (
+            <div style={{ marginBottom: 20 }}>
+              <h3 style={{ marginBottom: 8 }}>Knowledge Base Match</h3>
+              <div className="card" style={{ padding: 16, borderColor: '#238636' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 16 }}>📚</span>
+                  <strong style={{ color: '#3fb950' }}>{kbMatch.patternName}</strong>
+                </div>
+                <div className="text-muted" style={{ fontSize: 12, marginBottom: 8 }}>
+                  Seen {kbMatch.previousOccurrences || kbMatch.occurrences || 0} times • {Math.round(kbMatch.similarity)}% match
+                </div>
+                {(kbMatch.knownResolution || kbMatch.resolution) && (
+                  <div style={{ background: 'rgba(35,134,54,0.1)', padding: 12, borderRadius: 6, fontSize: 13 }}>
+                    <strong className="text-success">Known Fix:</strong> {kbMatch.knownResolution || kbMatch.resolution}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Slack Status */}
+          <div style={{ marginBottom: 20 }}>
+            <h3 style={{ marginBottom: 8 }}>Slack Notification</h3>
+            <div className="card" style={{ padding: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <SlackBadge status={slackStatus} />
+                {(slackStatus === 'pending' || slackStatus === 'failed') && (
+                  <button className="btn btn-primary btn-sm" onClick={handleResend} disabled={resending}>
+                    {resending ? 'Sending...' : slackStatus === 'failed' ? '🔄 Retry' : '📤 Send'}
+                  </button>
+                )}
+              </div>
+              {slackStatus === 'sent' && incident.slackMessageUrl && (
+                <div style={{ marginTop: 8 }}>
+                  <a href={incident.slackMessageUrl} target="_blank" rel="noopener noreferrer" className="text-link">
+                    View in Slack →
+                  </a>
+                </div>
+              )}
+              {slackStatus === 'failed' && incident.slackError && (
+                <div className="text-danger" style={{ marginTop: 8, fontSize: 12 }}>
+                  Error: {incident.slackError}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Error Details */}
+          <div style={{ marginBottom: 20 }}>
+            <h3 style={{ marginBottom: 8 }}>Error Details</h3>
+            <pre><code>{incident.errorDetail || 'No details available'}</code></pre>
+          </div>
+
+          {/* Suggested Fix */}
+          {incident.suggestedFix && (
+            <div style={{ marginBottom: 20 }}>
+              <h3 style={{ marginBottom: 8 }}>Suggested Fix</h3>
+              <div style={{ background: 'rgba(35,134,54,0.1)', border: '1px solid rgba(35,134,54,0.3)', borderRadius: 8, padding: 16 }}>
+                <span className="text-success">{incident.suggestedFix}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>Close</button>
+          <button className="btn btn-secondary" onClick={onJira}>📋 Jira Ticket</button>
+          {incident.status === 'open' && (
+            <button className="btn btn-primary" onClick={onResolve}>✓ Resolve</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ResolveModal({ incident, onClose, onSubmit }) {
+  const [resolution, setResolution] = useState('');
+  const [resolvedBy, setResolvedBy] = useState('');
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal animate-fade" style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Resolve Incident</h2>
+          <button className="btn btn-secondary btn-sm" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div style={{ marginBottom: 16 }}>
+            <label className="text-muted" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>How was it fixed?</label>
+            <textarea
+              rows={4}
+              value={resolution}
+              onChange={e => setResolution(e.target.value)}
+              placeholder="Describe the fix..."
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div>
+            <label className="text-muted" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>Resolved By</label>
+            <input
+              value={resolvedBy}
+              onChange={e => setResolvedBy(e.target.value)}
+              placeholder="Your name"
+              style={{ width: '100%' }}
+            />
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={() => onSubmit(resolution, resolvedBy)} disabled={!resolution || !resolvedBy}>
+            Submit
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function JiraModal({ incident, onClose }) {
+  const [ticket, setTicket] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API}/incidents/${incident.incidentId}/jira`).then(r => r.json()).then(setTicket).catch(() => {});
+  }, [incident]);
+
+  const handleCopy = (text) => {
+    copyToClipboard(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (!ticket) return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal animate-fade" onClick={e => e.stopPropagation()}>
+        <div className="modal-body" style={{ textAlign: 'center', padding: 60 }}>
+          <div className="animate-pulse text-muted">Loading...</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal animate-fade" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>📋 Jira Ticket</h2>
+          <button className="btn btn-secondary btn-sm" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div style={{ marginBottom: 16 }}>
+            <div className="text-muted" style={{ fontSize: 11, marginBottom: 4 }}>TITLE</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input readOnly value={ticket.title} style={{ flex: 1, fontWeight: 600 }} />
+              <button className="btn btn-secondary btn-sm" onClick={() => handleCopy(ticket.title)}>Copy</button>
+            </div>
+          </div>
+
+          <div className="grid grid-2" style={{ marginBottom: 16 }}>
+            <div>
+              <div className="text-muted" style={{ fontSize: 11, marginBottom: 4 }}>SEVERITY</div>
+              <span className={`badge badge-${ticket.severity}`}>{ticket.severity}</span>
+            </div>
+            <div>
+              <div className="text-muted" style={{ fontSize: 11, marginBottom: 4 }}>COMPONENT</div>
+              <div style={{ fontSize: 14 }}>{ticket.component}</div>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <div className="text-muted" style={{ fontSize: 11, marginBottom: 4 }}>LABELS</div>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {(ticket.labels || []).map((l, i) => (
+                <span key={i} className="badge" style={{ background: '#21262d', border: 'none', color: '#8b949e' }}>{l}</span>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <div className="text-muted" style={{ fontSize: 11, marginBottom: 4 }}>DESCRIPTION</div>
+            <textarea
+              readOnly
+              value={ticket.formattedText}
+              rows={10}
+              style={{ width: '100%', fontSize: 12 }}
+            />
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>Close</button>
+          <button className="btn btn-primary" onClick={() => handleCopy(ticket.formattedText)}>
+            {copied ? '✓ Copied!' : 'Copy All'}
+          </button>
+        </div>
+      </div>
+      {copied && <div className="toast">Copied to clipboard!</div>}
+    </div>
+  );
+}
+
+// ─── Main App ──────────────────────────────────────────
+
+function App() {
+  const [tab, setTab] = useState('overview');
+  const [summary, setSummary] = useState(null);
+  const [sites, setSites] = useState([]);
+  const [incidents, setIncidents] = useState([]);
+  const [kbEntries, setKbEntries] = useState([]);
+  const [kbStats, setKbStats] = useState(null);
+  const [settings, setSettings] = useState({ ai_provider: 'anthropic', ai_api_key: '' });
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsMessage, setSettingsMessage] = useState(null);
+  const [selectedIncident, setSelectedIncident] = useState(null);
+  const [showJira, setShowJira] = useState(false);
+  const [showResolve, setShowResolve] = useState(false);
+  const [filters, setFilters] = useState({ site: '', severity: '', status: '' });
+  const [loading, setLoading] = useState(true);
+  const [sendingAllSlack, setSendingAllSlack] = useState(false);
+  const [slackBulkResult, setSlackBulkResult] = useState(null);
+  const [scanStatus, setScanStatus] = useState(null);
+  const [showScanModal, setShowScanModal] = useState(false);
+  const [configuredSites, setConfiguredSites] = useState([]);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [summaryRes, sitesRes, incidentsRes, kbStatsRes, kbRes, settingsRes, scanSitesRes, scanStatusRes] = await Promise.all([
+        fetch(`${API}/dashboard/summary`).then(r => r.json()).catch(() => null),
+        fetch(`${API}/sites`).then(r => r.json()).catch(() => []),
+        fetch(`${API}/incidents?limit=100`).then(r => r.json()).catch(() => ({ incidents: [] })),
+        fetch(`${API}/kb/stats`).then(r => r.json()).catch(() => null),
+        fetch(`${API}/kb/entries?limit=50`).then(r => r.json()).catch(() => []),
+        fetch(`${API}/settings`).then(r => r.json()).catch(() => ({})),
+        fetch(`${API}/scan/sites`).then(r => r.json()).catch(() => ({ sites: [] })),
+        fetch(`${API}/scan/status`).then(r => r.json()).catch(() => ({ scans: [] })),
+      ]);
+      setSummary(summaryRes);
+      setSites(sitesRes);
+      setIncidents(incidentsRes?.incidents || []);
+      setKbStats(kbStatsRes);
+      setKbEntries(kbRes);
+      setConfiguredSites(scanSitesRes?.sites || []);
+      // Find active scan
+      const activeScans = scanStatusRes?.scans || [];
+      const runningScan = activeScans.find(s => s.status === 'running');
+      const lastScan = activeScans[activeScans.length - 1];
+      setScanStatus(runningScan || lastScan || null);
+      if (settingsRes) {
+        setSettings(prev => ({
+          ...prev,
+          ai_provider: settingsRes.ai_provider || 'anthropic',
+          ai_api_key: settingsRes.ai_api_key || '',
+          ai_api_key_set: settingsRes.ai_api_key_set === 'true',
+        }));
+      }
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const filteredIncidents = incidents.filter(inc => {
+    const sev = inc.classification?.severity;
+    if (filters.site && inc.siteName !== filters.site) return false;
+    if (filters.severity && sev !== filters.severity) return false;
+    if (filters.status && inc.status !== filters.status) return false;
+    return true;
+  });
+
+  const handleResolve = async (resolution, resolvedBy) => {
+    await fetch(`${API}/incidents/${selectedIncident.incidentId}/resolve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resolution, resolvedBy }),
+    });
+    setShowResolve(false);
+    setSelectedIncident(null);
+    fetchData();
+  };
+
+  const handleSendAllPendingSlack = async () => {
+    setSendingAllSlack(true);
+    setSlackBulkResult(null);
+    try {
+      const res = await fetch(`${API}/incidents/send-all-pending-slack`, { method: 'POST' });
+      const result = await res.json();
+      setSlackBulkResult(result);
+      fetchData();
+      // Auto-hide result after 5 seconds
+      setTimeout(() => setSlackBulkResult(null), 5000);
+    } catch (e) {
+      setSlackBulkResult({ success: false, error: e.message });
+    }
+    setSendingAllSlack(false);
+  };
+
+  const handleResendSlack = async (incident) => {
+    try {
+      const res = await fetch(`${API}/incidents/${incident.incidentId}/resend-slack`, { method: 'POST' });
+      const result = await res.json();
+      setSelectedIncident(prev => ({
+        ...prev,
+        slackStatus: result.success ? 'sent' : 'failed',
+        slackMessageUrl: result.slackMessageUrl,
+        slackError: result.error,
+      }));
+      fetchData();
+    } catch (e) {
+      setSelectedIncident(prev => ({ ...prev, slackStatus: 'failed', slackError: e.message }));
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    setSettingsSaving(true);
+    setSettingsMessage(null);
+    try {
+      const res = await fetch(`${API}/settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ai_provider: settings.ai_provider,
+          ai_api_key: settings.ai_api_key,
+        }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        setSettingsMessage({ type: 'success', text: 'Settings saved successfully!' });
+        fetchData(); // Refresh to get masked key
+      } else {
+        setSettingsMessage({ type: 'error', text: result.error || 'Failed to save settings' });
+      }
+    } catch (e) {
+      setSettingsMessage({ type: 'error', text: 'Failed to save settings: ' + e.message });
+    }
+    setSettingsSaving(false);
+    setTimeout(() => setSettingsMessage(null), 3000);
+  };
+
+  // Scan functions
+  const handleStartScan = async (siteName = null) => {
+    try {
+      const url = siteName ? `${API}/scan/${encodeURIComponent(siteName)}` : `${API}/scan`;
+      const res = await fetch(url, { method: 'POST' });
+      const result = await res.json();
+
+      if (result.success) {
+        setScanStatus({ id: result.scanId, siteName: result.siteName, status: 'running', startedAt: new Date().toISOString(), output: [] });
+        setShowScanModal(true);
+        // Start polling for status
+        pollScanStatus(result.scanId);
+      } else {
+        alert(result.error || 'Failed to start scan');
+      }
+    } catch (e) {
+      alert('Failed to start scan: ' + e.message);
+    }
+  };
+
+  const handleStopScan = async () => {
+    if (!scanStatus?.id) return;
+    try {
+      await fetch(`${API}/scan/${scanStatus.id}`, { method: 'DELETE' });
+      fetchData();
+    } catch (e) {
+      console.error('Failed to stop scan:', e);
+    }
+  };
+
+  const pollScanStatus = async (scanId) => {
+    const poll = async () => {
+      try {
+        const res = await fetch(`${API}/scan/status/${scanId}`);
+        const result = await res.json();
+        setScanStatus(result);
+
+        if (result.status === 'running') {
+          setTimeout(poll, 2000);
+        } else {
+          // Scan completed - refresh data
+          fetchData();
+        }
+      } catch (e) {
+        console.error('Poll error:', e);
+      }
+    };
+    poll();
+  };
+
+  return (
+    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '20px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div>
+          <h1 style={{ fontSize: 20, fontWeight: 600, marginBottom: 2 }}>GoKwik Debug Agent</h1>
+          <div className="text-muted" style={{ fontSize: 11 }}>AI-Powered Issue Detection</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {(summary?.slackNotifications?.pending > 0 || summary?.slackNotifications?.failed > 0) && (
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={handleSendAllPendingSlack}
+              disabled={sendingAllSlack}
+            >
+              {sendingAllSlack ? 'Sending...' : `Notify Slack (${(summary?.slackNotifications?.pending || 0) + (summary?.slackNotifications?.failed || 0)})`}
+            </button>
+          )}
+          {scanStatus?.status === 'running' ? (
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => setShowScanModal(true)}
+              style={{ color: '#d29922' }}
+            >
+              <span className="animate-pulse" style={{ marginRight: 4 }}>●</span>
+              Scanning {scanStatus.siteName === 'all' ? 'All' : scanStatus.siteName}
+            </button>
+          ) : (
+            <button className="btn btn-primary btn-sm" onClick={() => handleStartScan()}>
+              Run Scan
+            </button>
+          )}
+          <button className="btn btn-secondary btn-sm" onClick={fetchData}>Refresh</button>
+        </div>
+      </div>
+
+      {/* Scan Status Modal */}
+      {showScanModal && scanStatus && (
+        <div className="modal-overlay" onClick={() => scanStatus.status !== 'running' && setShowScanModal(false)}>
+          <div className="modal animate-fade" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header" style={{ padding: 16 }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{
+                    width: 8, height: 8, borderRadius: '50%',
+                    background: scanStatus.status === 'running' ? '#d29922' : scanStatus.status === 'completed' ? '#3fb950' : '#f85149'
+                  }} className={scanStatus.status === 'running' ? 'animate-pulse' : ''} />
+                  <h2 style={{ fontSize: 14, fontWeight: 600 }}>
+                    Scan: {scanStatus.siteName === 'all' ? 'All Sites' : scanStatus.siteName}
+                  </h2>
+                </div>
+                <div className="text-muted" style={{ fontSize: 11 }}>
+                  {new Date(scanStatus.startedAt).toLocaleTimeString()}
+                  {scanStatus.completedAt && ` — ${new Date(scanStatus.completedAt).toLocaleTimeString()}`}
+                </div>
+              </div>
+              {scanStatus.status !== 'running' && (
+                <button className="btn btn-secondary btn-sm" onClick={() => setShowScanModal(false)} style={{ padding: '4px 8px' }}>×</button>
+              )}
+            </div>
+            <div className="modal-body">
+              <div style={{ marginBottom: 16 }}>
+                <span className={`badge ${scanStatus.status === 'running' ? 'badge-high' : scanStatus.status === 'completed' ? 'badge-resolved' : 'badge-critical'}`}>
+                  {scanStatus.status.toUpperCase()}
+                </span>
+                {scanStatus.error && (
+                  <span className="text-danger" style={{ marginLeft: 12, fontSize: 13 }}>{scanStatus.error}</span>
+                )}
+              </div>
+              <div style={{ background: '#0d1117', borderRadius: 8, padding: 16, maxHeight: 400, overflow: 'auto' }}>
+                <pre style={{ margin: 0, fontSize: 11, lineHeight: 1.6, color: '#8b949e', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  {(scanStatus.output || scanStatus.outputLines || []).join('\n') || 'Waiting for output...'}
+                </pre>
+              </div>
+            </div>
+            <div className="modal-footer">
+              {scanStatus.status === 'running' ? (
+                <button className="btn btn-danger" onClick={handleStopScan}>Stop Scan</button>
+              ) : (
+                <button className="btn btn-primary" onClick={() => setShowScanModal(false)}>Close</button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Slack Result Toast */}
+      {slackBulkResult && (
+        <div className="toast" style={{
+          background: slackBulkResult.success ? '#238636' : '#f85149',
+          bottom: 24,
+          right: 24
+        }}>
+          {slackBulkResult.success
+            ? `✓ Sent ${slackBulkResult.sent} notifications${slackBulkResult.failed > 0 ? `, ${slackBulkResult.failed} failed` : ''}`
+            : `✕ Failed: ${slackBulkResult.error || 'Unknown error'}`
+          }
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div style={{ marginBottom: 24 }}>
+        <div className="tabs" style={{ display: 'inline-flex' }}>
+          <div className={`tab ${tab === 'overview' ? 'active' : ''}`} onClick={() => setTab('overview')}>Overview</div>
+          <div className={`tab ${tab === 'incidents' ? 'active' : ''}`} onClick={() => setTab('incidents')}>All Issues</div>
+          <div className={`tab ${tab === 'kb' ? 'active' : ''}`} onClick={() => setTab('kb')}>Knowledge Base</div>
+          <div className={`tab ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>Settings</div>
+        </div>
+      </div>
+
+      {/* Overview Tab */}
+      {tab === 'overview' && (
+        <>
+          <div className="section">
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <StatCard label="Total Issues" value={summary?.totalIncidents?.total ?? '--'} />
+              <StatCard label="Open" value={summary?.totalIncidents?.open ?? '--'} color="#f85149" />
+              <StatCard label="Resolved" value={summary?.totalIncidents?.resolved ?? '--'} color="#3fb950" />
+              <StatCard label="Critical" value={summary?.severityDistribution?.critical ?? '--'} color="#f85149" />
+              <StatCard label="KB Match" value={summary?.kbMatchRate ? `${summary.kbMatchRate}%` : '--'} color="#58a6ff" />
+              <StatCard label="Slack Sent" value={summary?.slackNotifications?.sent ?? '--'} color="#3fb950" />
+            </div>
+          </div>
+
+          <div className="section">
+            <div className="section-header">
+              <h3>Storefronts</h3>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+              {sites.map((s, i) => (
+                <SiteCard
+                  key={i}
+                  site={s}
+                  onClick={() => { setFilters({ site: s.name }); setTab('incidents'); }}
+                  onScan={handleStartScan}
+                  isScanning={scanStatus?.status === 'running'}
+                  scanningSite={scanStatus?.siteName}
+                />
+              ))}
+              {sites.length === 0 && configuredSites.length > 0 && (
+                <div className="card" style={{ padding: 20, textAlign: 'center' }}>
+                  <div className="text-muted" style={{ marginBottom: 12 }}>No scan data yet. Start scanning configured sites:</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                    {configuredSites.map((s, i) => (
+                      <button
+                        key={i}
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleStartScan(s.name)}
+                        disabled={scanStatus?.status === 'running'}
+                      >
+                        🔍 {s.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {sites.length === 0 && configuredSites.length === 0 && (
+                <div className="card text-muted" style={{ padding: 40, textAlign: 'center' }}>
+                  No sites configured. Add sites to <code>config/sites.yaml</code>.
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="section">
+            <div className="section-header">
+              <h3>Recent Issues</h3>
+            </div>
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Severity</th>
+                    <th>Domain</th>
+                    <th>Issue</th>
+                    <th>Store</th>
+                    <th>Impact</th>
+                    <th>Status</th>
+                    <th>Slack</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {incidents.slice(0, 8).map((inc, i) => <IncidentRow key={i} incident={inc} onSelect={setSelectedIncident} />)}
+                  {incidents.length === 0 && (
+                    <tr><td colSpan={8} className="text-muted" style={{ textAlign: 'center', padding: 40 }}>
+                      No issues detected yet.
+                    </td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Incidents Tab */}
+      {tab === 'incidents' && (
+        <div className="section">
+          <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+            <select value={filters.site || ''} onChange={e => setFilters({ ...filters, site: e.target.value })}>
+              <option value="">All Stores</option>
+              {sites.map((s, i) => <option key={i} value={s.name}>{s.name}</option>)}
+            </select>
+            <select value={filters.severity || ''} onChange={e => setFilters({ ...filters, severity: e.target.value })}>
+              <option value="">All Severities</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+            <select value={filters.status || ''} onChange={e => setFilters({ ...filters, status: e.target.value })}>
+              <option value="">All Status</option>
+              <option value="open">Open</option>
+              <option value="resolved">Resolved</option>
+            </select>
+            <span className="text-muted" style={{ fontSize: 13 }}>{filteredIncidents.length} issues</span>
+          </div>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Severity</th>
+                  <th>Domain</th>
+                  <th>Issue</th>
+                  <th>Store</th>
+                  <th>Impact</th>
+                  <th>Status</th>
+                  <th>Slack</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredIncidents.map((inc, i) => <IncidentRow key={i} incident={inc} onSelect={setSelectedIncident} />)}
+                {filteredIncidents.length === 0 && (
+                  <tr><td colSpan={8} className="text-muted" style={{ textAlign: 'center', padding: 40 }}>No issues match filters.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* KB Tab */}
+      {tab === 'kb' && (
+        <div className="section">
+          {kbStats && (
+            <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+              <StatCard label="Total Patterns" value={kbStats.totalEntries} color="#58a6ff" />
+              <StatCard label="Resolved" value={kbStats.resolvedEntries} color="#3fb950" />
+              <StatCard label="Unresolved" value={kbStats.unresolvedEntries} color="#d29922" />
+            </div>
+          )}
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Pattern</th>
+                  <th>Category</th>
+                  <th>Count</th>
+                  <th>Status</th>
+                  <th>Fix</th>
+                </tr>
+              </thead>
+              <tbody>
+                {kbEntries.map((e, i) => {
+                  const pattern = e.errorSignature || e.id || '';
+                  const fix = e.resolution || e.suggestedFix || '';
+                  return (
+                    <tr key={i}>
+                      <td style={{ maxWidth: 400 }}>
+                        <Tooltip text={pattern} position="bottom">
+                          <div className="truncate" style={{ fontWeight: 500, maxWidth: 400 }}>{pattern}</div>
+                        </Tooltip>
+                      </td>
+                      <td>{e.errorCategory}</td>
+                      <td style={{ fontWeight: 600 }}>{e.occurrenceCount || 1}</td>
+                      <td>
+                        <span className={`badge ${e.isResolved ? 'badge-resolved' : 'badge-open'}`}>
+                          {e.isResolved ? 'resolved' : 'open'}
+                        </span>
+                      </td>
+                      <td style={{ maxWidth: 250 }}>
+                        <Tooltip text={fix || '—'} position="bottom">
+                          <div className="truncate text-success" style={{ maxWidth: 250 }}>{fix || '—'}</div>
+                        </Tooltip>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {kbEntries.length === 0 && (
+                  <tr><td colSpan={5} className="text-muted" style={{ textAlign: 'center', padding: 40 }}>KB empty.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Tab */}
+      {tab === 'settings' && (
+        <div className="section">
+          <div className="card" style={{ maxWidth: 600 }}>
+            <div className="card-header">
+              <h2>AI Classification Settings</h2>
+            </div>
+            <div style={{ padding: '0 20px 20px' }}>
+              <p className="text-muted" style={{ marginBottom: 24, fontSize: 13 }}>
+                Configure the AI provider used for error classification. The API key is stored securely and used for intelligent error analysis.
+              </p>
+
+              <div style={{ marginBottom: 20 }}>
+                <label className="text-muted" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>AI Provider</label>
+                <select
+                  value={settings.ai_provider}
+                  onChange={e => setSettings({ ...settings, ai_api_key: '', ai_provider: e.target.value })}
+                  style={{ width: '100%' }}
+                >
+                  <option value="anthropic">Anthropic (Claude)</option>
+                  <option value="openai">OpenAI (GPT-4)</option>
+                  <option value="gemini">Google (Gemini)</option>
+                  <option value="grok">xAI (Grok)</option>
+                </select>
+                <div className="text-muted" style={{ fontSize: 11, marginTop: 6 }}>
+                  {settings.ai_provider === 'anthropic' && 'Uses Claude for classification. Get your API key from console.anthropic.com'}
+                  {settings.ai_provider === 'openai' && 'Uses GPT-4 for classification. Get your API key from platform.openai.com'}
+                  {settings.ai_provider === 'gemini' && 'Uses Gemini for classification. Get your API key from aistudio.google.com'}
+                  {settings.ai_provider === 'grok' && 'Uses Grok for classification. Get your API key from x.ai'}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <label className="text-muted" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>API Key</label>
+                <input
+                  type="password"
+                  value={settings.ai_api_key}
+                  onChange={e => setSettings({ ...settings, ai_api_key: e.target.value })}
+                  placeholder={settings.ai_api_key_set ? 'API key is set (enter new to change)' : 'Enter your API key'}
+                  style={{ width: '100%' }}
+                />
+                {settings.ai_api_key_set && !settings.ai_api_key.startsWith('••••') && settings.ai_api_key === '' && (
+                  <div className="text-success" style={{ fontSize: 11, marginTop: 6 }}>
+                    ✓ API key is configured
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSaveSettings}
+                  disabled={settingsSaving}
+                >
+                  {settingsSaving ? 'Saving...' : 'Save Settings'}
+                </button>
+                {settingsMessage && (
+                  <span style={{ fontSize: 13, color: settingsMessage.type === 'success' ? '#3fb950' : '#f85149' }}>
+                    {settingsMessage.text}
+                  </span>
+                )}
+              </div>
+
+              <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid #30363d' }}>
+                <h3 style={{ marginBottom: 12 }}>Provider Comparison</h3>
+                <div className="table-container" style={{ background: 'transparent', border: 'none' }}>
+                  <table style={{ fontSize: 12 }}>
+                    <thead>
+                      <tr>
+                        <th>Provider</th>
+                        <th>Model</th>
+                        <th>Best For</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>Anthropic</strong></td>
+                        <td>Claude 3.5 Sonnet</td>
+                        <td className="text-muted">Best accuracy, detailed reasoning</td>
+                      </tr>
+                      <tr>
+                        <td><strong>OpenAI</strong></td>
+                        <td>GPT-4 Turbo</td>
+                        <td className="text-muted">Fast, good general performance</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Google</strong></td>
+                        <td>Gemini Pro</td>
+                        <td className="text-muted">Cost-effective, good accuracy</td>
+                      </tr>
+                      <tr>
+                        <td><strong>xAI</strong></td>
+                        <td>Grok</td>
+                        <td className="text-muted">Alternative option</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modals */}
+      {selectedIncident && !showJira && !showResolve && (
+        <IncidentDetail
+          incident={selectedIncident}
+          onClose={() => setSelectedIncident(null)}
+          onJira={() => setShowJira(true)}
+          onResolve={() => setShowResolve(true)}
+          onResendSlack={handleResendSlack}
+        />
+      )}
+      {showJira && selectedIncident && (
+        <JiraModal incident={selectedIncident} onClose={() => setShowJira(false)} />
+      )}
+      {showResolve && selectedIncident && (
+        <ResolveModal incident={selectedIncident} onClose={() => setShowResolve(false)} onSubmit={handleResolve} />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
+</body>
+</html>

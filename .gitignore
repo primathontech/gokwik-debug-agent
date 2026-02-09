@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Environment files (contains secrets)
+.env
+config/.env
+
+# Build output
+dist/
+
+# Database files
+data/*.db
+data/*.db-shm
+data/*.db-wal
+*.db
+*.db-shm
+*.db-wal
+
+# Screenshots (generated)
+screenshots/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Claude Code
+.claude/
+
+# Nested duplicate folder (if any)
+gokwik-debug-agent/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+.tmp/

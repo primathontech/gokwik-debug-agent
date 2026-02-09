@@ -1,0 +1,694 @@
+known_failures:
+  # ============================================================================
+  # EXISTING PATTERNS (KF-001 to KF-008)
+  # ============================================================================
+
+  - id: "KF-001"
+    pattern: "duplicate Facebook Pixel"
+    description: "Facebook Pixel SDK loaded twice, causing duplicate event firing"
+    error_type: "console_warning"
+    match_regex: "Facebook Pixel.*already.*loaded|fbevents\\.js.*loaded.*twice"
+    severity: "low"
+    impact_score: 15
+    suggested_fix: "Check GTM container and hardcoded scripts for duplicate fbevents.js inclusion. Remove one instance."
+    affected_stores: ["PlixKids"]
+    domain: "THIRD_PARTY"
+    affected_flow: "browse"
+
+  - id: "KF-002"
+    pattern: "503 on Cloud Run endpoint"
+    description: "Google Cloud Run service returning 503 Service Unavailable"
+    error_type: "network_5xx"
+    match_regex: "503.*run\\.app|run\\.app.*503"
+    severity: "medium"
+    impact_score: 40
+    suggested_fix: "Cloud Run service may be cold-starting or hitting concurrency limits. Check Cloud Run logs and scaling settings."
+    domain: "INFRASTRUCTURE"
+    affected_flow: "unknown"
+
+  - id: "KF-003"
+    pattern: "Cart API timeout"
+    description: "/api/v1/cart/get or /api/v1/cart/add timing out"
+    error_type: "cart_error"
+    match_regex: "/api/v1/cart/(get|add).*timeout|timeout.*/api/v1/cart"
+    severity: "critical"
+    impact_score: 90
+    suggested_fix: "Cart service may be overloaded. Check backend service health. If persistent, check Redis connection pool."
+    domain: "BACKEND"
+    affected_flow: "cart"
+    is_conversion_blocking: true
+
+  - id: "KF-004"
+    pattern: "Hydration mismatch"
+    description: "Next.js server/client HTML mismatch causing hydration errors"
+    error_type: "hydration_error"
+    match_regex: "Hydration failed|Text content does not match|did not match"
+    severity: "medium"
+    impact_score: 35
+    suggested_fix: "Component renders differently on server vs client. Check for browser-only APIs (window, localStorage) used during SSR. Wrap in useEffect or dynamic import with ssr:false."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-005"
+    pattern: "CORS error on API"
+    description: "Cross-Origin Resource Sharing error blocking API requests"
+    error_type: "network_cors"
+    match_regex: "CORS|cross-origin|Access-Control-Allow-Origin"
+    severity: "high"
+    impact_score: 75
+    suggested_fix: "Backend API missing CORS headers. Check API gateway/nginx config for Access-Control-Allow-Origin header. Ensure the storefront domain is whitelisted."
+    domain: "BACKEND"
+    affected_flow: "unknown"
+
+  - id: "KF-006"
+    pattern: "Chunk load failure"
+    description: "Next.js webpack chunk failed to load (ChunkLoadError)"
+    error_type: "js_runtime_error"
+    match_regex: "ChunkLoadError|Loading chunk.*failed|_next/static/chunks.*404"
+    severity: "high"
+    impact_score: 70
+    suggested_fix: "Usually caused by a deployment that changed chunk hashes while users have the old HTML cached. User needs to hard refresh. If persistent, check CDN cache invalidation after deploy."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-007"
+    pattern: "Image 404"
+    description: "Product or banner image returning 404"
+    error_type: "cdn_error"
+    match_regex: "\\.(jpg|jpeg|png|webp|gif|svg).*404|404.*\\.(jpg|jpeg|png|webp|gif|svg)"
+    severity: "medium"
+    impact_score: 50
+    suggested_fix: "Image asset missing from CDN. Check if image was deleted from Shopify admin or if CDN path changed. Verify the image URL in product data."
+    domain: "CDN"
+    affected_flow: "product_page"
+
+  - id: "KF-008"
+    pattern: "KwikPass load failure"
+    description: "KwikPass or GoKwik checkout SDK failed to load"
+    error_type: "sdk_load_error"
+    match_regex: "kwikpass.*failed|gokwik\\.js.*error|non-shopify-core-functions.*failed"
+    severity: "critical"
+    impact_score: 85
+    suggested_fix: "GoKwik SDK failed to load. Check if pdp.gokwik.co is accessible. May be a CDN or DNS issue on GoKwik's side. Contact GoKwik support if persistent."
+    domain: "SDK"
+    affected_flow: "checkout"
+    is_conversion_blocking: true
+
+  # ============================================================================
+  # NEW GOKWIK-SPECIFIC PATTERNS (KF-009 to KF-018)
+  # ============================================================================
+
+  - id: "KF-009"
+    pattern: "KwikCheckout payment gateway timeout"
+    description: "Payment gateway request timing out during checkout"
+    error_type: "payment_error"
+    match_regex: "/api/v1/payment.*timeout|/checkout/payment.*(504|timeout)|payment.*gateway.*timeout"
+    severity: "critical"
+    impact_score: 95
+    suggested_fix: "Payment gateway is slow or unresponsive. Check payment provider status page (Razorpay/Paytm/etc). If persistent, contact payment gateway support. May need to increase timeout on GoKwik side."
+    domain: "PAYMENT"
+    affected_flow: "payment"
+    is_conversion_blocking: true
+
+  - id: "KF-010"
+    pattern: "Cart API 500 error"
+    description: "Cart service returning 500 Internal Server Error"
+    error_type: "cart_error"
+    match_regex: "/api/v1/cart.*(500|Internal Server Error)|500.*/api/v1/cart"
+    severity: "critical"
+    impact_score: 92
+    suggested_fix: "Cart service is crashing. Check backend logs for stack traces. Common causes: database connection issues, Redis timeout, malformed cart data. Escalate to backend team immediately."
+    domain: "BACKEND"
+    affected_flow: "cart"
+    is_conversion_blocking: true
+
+  - id: "KF-011"
+    pattern: "GoKwik SDK initialization failure"
+    description: "GoKwik SDK script failed to load or initialize"
+    error_type: "sdk_load_error"
+    match_regex: "gokwik.*init.*failed|gwk_.*undefined|pdp\\.gokwik\\.co.*(failed|error|404)|Cannot read.*gwk_"
+    severity: "critical"
+    impact_score: 88
+    suggested_fix: "GoKwik SDK failed to initialize. Check: 1) pdp.gokwik.co is accessible, 2) SDK script is loaded before init call, 3) Merchant ID is correct. Check browser console for specific error. Contact GoKwik support if CDN issue."
+    domain: "SDK"
+    affected_flow: "checkout"
+    is_conversion_blocking: true
+
+  - id: "KF-012"
+    pattern: "Checkout redirect loop"
+    description: "Repeated redirects between checkout URLs causing infinite loop"
+    error_type: "checkout_error"
+    match_regex: "ERR_TOO_MANY_REDIRECTS|redirect.*loop|checkout.*redirect.*checkout"
+    severity: "critical"
+    impact_score: 90
+    suggested_fix: "Checkout is stuck in redirect loop. Check: 1) Session/cart cookie handling, 2) Authentication state, 3) Shopify checkout URL configuration. Clear cookies and test fresh checkout flow."
+    domain: "BACKEND"
+    affected_flow: "checkout"
+    is_conversion_blocking: true
+
+  - id: "KF-013"
+    pattern: "Product image CDN 403"
+    description: "CDN returning 403 Forbidden for product images"
+    error_type: "cdn_error"
+    match_regex: "cdn\\.shopify\\.com.*403|403.*cdn\\.shopify\\.com|images.*403 Forbidden"
+    severity: "high"
+    impact_score: 65
+    suggested_fix: "CDN is blocking image requests. Check: 1) Image URL is not malformed, 2) Shopify CDN isn't rate-limiting, 3) Hotlink protection isn't blocking. May need to re-upload image in Shopify admin."
+    domain: "CDN"
+    affected_flow: "product_page"
+
+  - id: "KF-014"
+    pattern: "Session/auth token expired"
+    description: "API returning 401 Unauthorized due to expired session"
+    error_type: "auth_error"
+    match_regex: "401.*unauthorized|token.*expired|session.*invalid|401.*/api/"
+    severity: "high"
+    impact_score: 70
+    suggested_fix: "User session has expired. Check: 1) Token refresh logic, 2) Session cookie expiry settings, 3) Clock skew between client and server. User needs to re-login or refresh the page."
+    domain: "BACKEND"
+    affected_flow: "login"
+
+  - id: "KF-015"
+    pattern: "Google Analytics blocked"
+    description: "GA4 or Google Analytics script blocked by ad blocker or failed to load"
+    error_type: "third_party_error"
+    match_regex: "google-analytics\\.com.*(blocked|failed|ERR_BLOCKED)|gtag.*failed|analytics\\.js.*error"
+    severity: "low"
+    impact_score: 20
+    suggested_fix: "Analytics script blocked (likely by ad blocker) or failed to load. This is common and expected for users with ad blockers. Not a functional issue, but will affect analytics data accuracy."
+    domain: "THIRD_PARTY"
+    affected_flow: "browse"
+
+  - id: "KF-016"
+    pattern: "Next.js build manifest missing"
+    description: "Next.js _buildManifest.js or _ssgManifest.js returning 404"
+    error_type: "js_runtime_error"
+    match_regex: "_buildManifest\\.js.*404|_ssgManifest\\.js.*404|_next.*manifest.*404"
+    severity: "high"
+    impact_score: 75
+    suggested_fix: "Build manifest missing after deployment. This usually means: 1) New deployment is propagating to CDN, 2) CDN cache is stale, 3) Build artifacts were not uploaded. Force CDN cache invalidation and verify build output."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-017"
+    pattern: "API response schema mismatch"
+    description: "TypeError when parsing API response due to unexpected data structure"
+    error_type: "api_schema_error"
+    match_regex: "TypeError.*Cannot read propert.*of undefined|Cannot read.*null|undefined is not an object"
+    severity: "high"
+    impact_score: 68
+    suggested_fix: "Frontend received unexpected API response structure. Check: 1) API is returning expected schema, 2) Null checks are in place, 3) API version mismatch. Add defensive coding with optional chaining (?.)."
+    domain: "FRONTEND"
+    affected_flow: "unknown"
+
+  - id: "KF-018"
+    pattern: "Mixed content warning"
+    description: "HTTPS page trying to load HTTP resource"
+    error_type: "security_error"
+    match_regex: "Mixed Content.*http://|loading.*HTTP.*HTTPS|blocked.*insecure"
+    severity: "medium"
+    impact_score: 45
+    suggested_fix: "Page is loading insecure HTTP resources on HTTPS site. Find and update all HTTP URLs to HTTPS. Common sources: hardcoded image URLs, third-party scripts, API endpoints."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  # ============================================================================
+  # ADDITIONAL E-COMMERCE PATTERNS (KF-019 to KF-025)
+  # ============================================================================
+
+  - id: "KF-019"
+    pattern: "Shopify Storefront API rate limit"
+    description: "Shopify API returning 429 Too Many Requests"
+    error_type: "network_4xx"
+    match_regex: "429.*Too Many Requests|shopify.*rate.*limit|X-Shopify-Shop-Api-Call-Limit"
+    severity: "high"
+    impact_score: 72
+    suggested_fix: "Shopify API rate limit exceeded. Implement request throttling, use bulk queries where possible, cache responses. Check if background sync jobs are flooding the API."
+    domain: "BACKEND"
+    affected_flow: "browse"
+
+  - id: "KF-020"
+    pattern: "Inventory sync failure"
+    description: "Product inventory not syncing between Shopify and storefront"
+    error_type: "api_schema_error"
+    match_regex: "inventory.*sync.*failed|stock.*mismatch|available.*quantity.*error"
+    severity: "high"
+    impact_score: 70
+    suggested_fix: "Inventory data out of sync. Check: 1) Shopify webhook delivery, 2) Inventory sync job logs, 3) Redis/cache invalidation. Force inventory refresh from Shopify admin."
+    domain: "BACKEND"
+    affected_flow: "product_page"
+    is_conversion_blocking: true
+
+  - id: "KF-021"
+    pattern: "Coupon/discount code failure"
+    description: "Discount code not applying or returning error"
+    error_type: "checkout_error"
+    match_regex: "discount.*invalid|coupon.*failed|promo.*error|discount_code.*not.*applicable"
+    severity: "medium"
+    impact_score: 55
+    suggested_fix: "Discount code not working. Check: 1) Code is active in Shopify, 2) Minimum order requirements met, 3) Product is eligible. May be user error or expired code."
+    domain: "BACKEND"
+    affected_flow: "checkout"
+
+  - id: "KF-022"
+    pattern: "Pincode serviceability check failure"
+    description: "Pincode/delivery check API failing"
+    error_type: "network_5xx"
+    match_regex: "pincode.*check.*failed|serviceability.*error|delivery.*available.*error"
+    severity: "high"
+    impact_score: 75
+    suggested_fix: "Pincode check service is down. Check logistics partner API status. May need fallback to allow orders and validate later."
+    domain: "BACKEND"
+    affected_flow: "checkout"
+    is_conversion_blocking: true
+
+  - id: "KF-023"
+    pattern: "OTP delivery failure"
+    description: "OTP SMS/WhatsApp not being delivered"
+    error_type: "auth_error"
+    match_regex: "OTP.*failed|SMS.*delivery.*error|otp.*not.*received|verify.*phone.*error"
+    severity: "critical"
+    impact_score: 85
+    suggested_fix: "OTP not being delivered. Check: 1) SMS gateway status, 2) Phone number format, 3) DND registry. Try alternative channel (WhatsApp/email). Contact SMS provider if widespread."
+    domain: "BACKEND"
+    affected_flow: "login"
+    is_conversion_blocking: true
+
+  - id: "KF-024"
+    pattern: "Razorpay/Payment SDK load failure"
+    description: "Razorpay or payment SDK script failed to load"
+    error_type: "sdk_load_error"
+    match_regex: "razorpay.*failed|checkout\\.razorpay\\.com.*(error|blocked)|Razorpay.*undefined"
+    severity: "critical"
+    impact_score: 90
+    suggested_fix: "Payment SDK failed to load. Check: 1) Razorpay CDN is accessible, 2) No ad blocker interference, 3) CSP headers allow Razorpay domain. Test in incognito mode."
+    domain: "PAYMENT"
+    affected_flow: "payment"
+    is_conversion_blocking: true
+
+  - id: "KF-025"
+    pattern: "WebSocket connection failure"
+    description: "Real-time connection (chat, live updates) failing"
+    error_type: "websocket_error"
+    match_regex: "WebSocket.*failed|wss://.*error|socket.*connection.*closed|ECONNREFUSED.*ws"
+    severity: "medium"
+    impact_score: 40
+    suggested_fix: "WebSocket connection failed. Check: 1) WebSocket server is running, 2) Firewall/proxy allows WSS, 3) SSL certificate is valid. Fallback to polling if critical."
+    domain: "INFRASTRUCTURE"
+    affected_flow: "browse"
+
+  # ============================================================================
+  # SHOPIFY-SPECIFIC PATTERNS (KF-026 to KF-035)
+  # ============================================================================
+
+  - id: "KF-026"
+    pattern: "Shopify Admin API error"
+    description: "Shopify Admin API returning errors (authentication, permissions, or server issues)"
+    error_type: "shopify_api_error"
+    match_regex: "admin\\.shopify\\.com.*(401|403|500)|shopify.*admin.*api.*(error|failed)|X-Shopify-Access-Token.*invalid"
+    severity: "high"
+    impact_score: 75
+    suggested_fix: "Shopify Admin API error. Check: 1) Access token is valid and not expired, 2) API scopes match required permissions, 3) Shopify service status. Regenerate access token if authentication issue."
+    domain: "SHOPIFY"
+    affected_flow: "unknown"
+
+  - id: "KF-027"
+    pattern: "Shopify Storefront API GraphQL error"
+    description: "Shopify Storefront API GraphQL query returning errors"
+    error_type: "shopify_api_error"
+    match_regex: "storefront.*graphql.*(error|failed)|shopify.*storefront.*api|THROTTLED|ACCESS_DENIED.*storefront"
+    severity: "high"
+    impact_score: 70
+    suggested_fix: "Shopify Storefront API error. Check: 1) GraphQL query syntax, 2) Storefront access token is valid, 3) Query is within rate limits. Use persisted queries for better caching."
+    domain: "SHOPIFY"
+    affected_flow: "browse"
+
+  - id: "KF-028"
+    pattern: "Shopify theme Liquid error"
+    description: "Shopify Liquid template rendering error in theme"
+    error_type: "shopify_theme_error"
+    match_regex: "Liquid.*error|Liquid.*syntax|undefined.*liquid|template.*render.*error|snippet.*not.*found"
+    severity: "medium"
+    impact_score: 55
+    suggested_fix: "Shopify Liquid template error. Check: 1) Liquid syntax in theme files, 2) All required snippets exist, 3) Variable names are correct. Test in Shopify theme editor preview."
+    domain: "SHOPIFY"
+    affected_flow: "browse"
+
+  - id: "KF-029"
+    pattern: "Shopify app bridge error"
+    description: "Shopify App Bridge SDK failing to initialize or communicate"
+    error_type: "shopify_app_error"
+    match_regex: "App Bridge.*error|shopify.*app.*bridge|createApp.*failed|APP_BRIDGE.*undefined|postMessage.*shopify"
+    severity: "high"
+    impact_score: 65
+    suggested_fix: "Shopify App Bridge error. Check: 1) App is installed correctly, 2) App Bridge version is compatible, 3) Host parameter is correct. Ensure app is accessed through Shopify admin."
+    domain: "SHOPIFY"
+    affected_flow: "unknown"
+
+  - id: "KF-030"
+    pattern: "Shopify API rate limit exceeded"
+    description: "Shopify API returning 429 Too Many Requests"
+    error_type: "shopify_rate_limit"
+    match_regex: "429.*shopify|shopify.*429|Exceeded.*call.*limit|X-Shopify-Shop-Api-Call-Limit.*exceeded|THROTTLED"
+    severity: "high"
+    impact_score: 72
+    suggested_fix: "Shopify rate limit hit. Implement: 1) Request queuing with exponential backoff, 2) Bulk operations where possible, 3) Response caching. Check X-Shopify-Shop-Api-Call-Limit header for quota status."
+    domain: "SHOPIFY"
+    affected_flow: "unknown"
+
+  - id: "KF-031"
+    pattern: "Shopify checkout API error"
+    description: "Shopify checkout creation or update failing"
+    error_type: "shopify_checkout_error"
+    match_regex: "checkout.*create.*failed|checkout.*update.*error|checkoutCompleteWithCreditCard.*error|checkout.*lineItems.*error"
+    severity: "critical"
+    impact_score: 92
+    suggested_fix: "Shopify checkout error. Check: 1) Product availability/inventory, 2) Shipping rates configured, 3) Payment methods enabled. May need to clear checkout and start fresh."
+    domain: "SHOPIFY"
+    affected_flow: "checkout"
+    is_conversion_blocking: true
+
+  - id: "KF-032"
+    pattern: "Shopify webhook delivery failure"
+    description: "Shopify webhook failing to deliver or being rejected"
+    error_type: "shopify_api_error"
+    match_regex: "webhook.*delivery.*failed|webhook.*timeout|shopify.*webhook.*(401|403|500)|HMAC.*validation.*failed"
+    severity: "high"
+    impact_score: 68
+    suggested_fix: "Shopify webhook error. Check: 1) Webhook endpoint is accessible, 2) HMAC validation is correct, 3) Endpoint responds within timeout. Verify webhook secret matches."
+    domain: "SHOPIFY"
+    affected_flow: "unknown"
+
+  - id: "KF-033"
+    pattern: "Shopify CDN/asset error"
+    description: "Shopify CDN failing to serve theme assets or images"
+    error_type: "shopify_theme_error"
+    match_regex: "cdn\\.shopify\\.com.*(404|500|timeout)|asset.*not.*found|theme.*asset.*error"
+    severity: "medium"
+    impact_score: 50
+    suggested_fix: "Shopify CDN asset error. Check: 1) Asset exists in theme, 2) Asset URL is correct (use asset_url filter), 3) CDN is not rate limiting. Re-upload asset if missing."
+    domain: "SHOPIFY"
+    affected_flow: "browse"
+
+  - id: "KF-034"
+    pattern: "Shopify metafield error"
+    description: "Shopify metafield query or mutation error"
+    error_type: "shopify_api_error"
+    match_regex: "metafield.*(error|not found|invalid)|metafieldsSet.*error|namespace.*key.*invalid"
+    severity: "medium"
+    impact_score: 45
+    suggested_fix: "Shopify metafield error. Check: 1) Metafield namespace and key are valid, 2) Value type matches definition, 3) App has metafield access permissions. Create metafield definition if missing."
+    domain: "SHOPIFY"
+    affected_flow: "product_page"
+
+  - id: "KF-035"
+    pattern: "Shopify multipass/SSO error"
+    description: "Shopify Multipass authentication or SSO failing"
+    error_type: "shopify_checkout_error"
+    match_regex: "multipass.*(invalid|expired|error)|multipass.*token.*failed|customer.*login.*shopify.*error"
+    severity: "critical"
+    impact_score: 80
+    suggested_fix: "Shopify Multipass error. Check: 1) Multipass secret is correct, 2) Token timestamp is recent (within 15 min), 3) Customer email is valid. Regenerate multipass token if expired."
+    domain: "SHOPIFY"
+    affected_flow: "login"
+    is_conversion_blocking: true
+
+  # ============================================================================
+  # NEXT.JS SSR/SSG ERROR PATTERNS (KF-036 to KF-046)
+  # ============================================================================
+
+  - id: "KF-036"
+    pattern: "Next.js MODULE_NOT_FOUND in SSR"
+    description: "Module not found error during server-side rendering, missing dependency in SSR context"
+    error_type: "nextjs_ssr_error"
+    match_regex: "MODULE_NOT_FOUND|Cannot find module.*server|Module not found.*Can't resolve"
+    severity: "critical"
+    impact_score: 85
+    suggested_fix: "Install missing dependency. Check if the module is browser-only and needs conditional import. Use next/dynamic with ssr:false for browser-only components."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-037"
+    pattern: "Next.js window/document undefined in SSR"
+    description: "Browser API (window, document, localStorage) used during server-side rendering"
+    error_type: "nextjs_ssr_error"
+    match_regex: "window is not defined|document is not defined|localStorage is not defined|navigator is not defined|ReferenceError.*window|ReferenceError.*document"
+    severity: "high"
+    impact_score: 72
+    suggested_fix: "Wrap browser-only code in useEffect() or check typeof window !== 'undefined'. Use next/dynamic with ssr:false for components that require browser APIs."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-038"
+    pattern: "Next.js ISR 500 error"
+    description: "Incremental Static Regeneration returning 500 Internal Server Error"
+    error_type: "nextjs_ssr_error"
+    match_regex: "ISR.*500|revalidat.*error|getStaticProps.*500|stale.*revalidat.*fail|__NEXT_DATA__.*error"
+    severity: "high"
+    impact_score: 78
+    suggested_fix: "Check getStaticProps data fetching. Verify external APIs used in ISR are available. Add error handling with fallback content. Check revalidate interval settings."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-039"
+    pattern: "Next.js getServerSideProps timeout"
+    description: "getServerSideProps function timing out, causing page load failure"
+    error_type: "nextjs_ssr_error"
+    match_regex: "getServerSideProps.*timeout|GSSP.*timeout|server.*side.*props.*timeout|504.*getServerSideProps"
+    severity: "critical"
+    impact_score: 82
+    suggested_fix: "Optimize data fetching in getServerSideProps. Add timeout handling. Move non-critical data to client-side fetching. Consider switching to ISR for cacheable pages."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-040"
+    pattern: "Next.js Image optimization failure"
+    description: "next/image component failing to optimize or load images"
+    error_type: "nextjs_ssr_error"
+    match_regex: "next/image.*error|Image Optimization.*fail|/_next/image.*error|NEXT_IMAGE.*error|upstream image.*fail"
+    severity: "medium"
+    impact_score: 55
+    suggested_fix: "Check image source URL validity. Verify domains are configured in next.config.js images.domains. Check image loader configuration. Try unoptimized prop as fallback."
+    domain: "FRONTEND"
+    affected_flow: "product_page"
+
+  - id: "KF-041"
+    pattern: "Next.js _app/_document hydration conflict"
+    description: "_app.js or _document.js causing hydration conflicts with client-side rendering"
+    error_type: "hydration_error"
+    match_regex: "_app.*hydration|_document.*hydration|Warning.*Did not expect server HTML|Expected server HTML.*contain|There was an error while hydrating"
+    severity: "medium"
+    impact_score: 45
+    suggested_fix: "Check _app.js and _document.js for browser-only code. Ensure consistent rendering between server and client. Move dynamic content to useEffect."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-042"
+    pattern: "Next.js API route cold start timeout"
+    description: "Next.js API route experiencing cold start timeout on serverless deployment"
+    error_type: "nextjs_ssr_error"
+    match_regex: "api.*route.*timeout|/api/.*504|FUNCTION_INVOCATION_TIMEOUT|serverless.*timeout|edge.*function.*timeout"
+    severity: "high"
+    impact_score: 75
+    suggested_fix: "Optimize API route initialization. Reduce bundle size. Move to edge functions for faster cold starts. Add connection pooling for database connections."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-043"
+    pattern: "Next.js middleware redirect loop"
+    description: "Next.js middleware causing infinite redirect loops"
+    error_type: "nextjs_routing_error"
+    match_regex: "middleware.*redirect.*loop|ERR_TOO_MANY_REDIRECTS.*_next|middleware.*infinite|NextResponse.*redirect.*loop"
+    severity: "critical"
+    impact_score: 90
+    suggested_fix: "Add path exclusions to middleware matcher. Check redirect conditions to prevent loops. Ensure middleware skips static files and API routes. Add redirect count limit."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-044"
+    pattern: "Next.js Link prefetch failure"
+    description: "next/link prefetch failing on slow connections or for large pages"
+    error_type: "nextjs_routing_error"
+    match_regex: "prefetch.*fail|_next/data.*fail|next/link.*prefetch.*error|Failed to load.*_next/data"
+    severity: "low"
+    impact_score: 25
+    suggested_fix: "Not critical - prefetch failures are common on slow connections. Consider disabling prefetch on heavy pages with prefetch={false}. Check CDN caching for _next/data paths."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-045"
+    pattern: "Next.js dynamic import failure"
+    description: "next/dynamic or React.lazy failing to load dynamically imported component"
+    error_type: "nextjs_build_error"
+    match_regex: "dynamic.*import.*fail|React\\.lazy.*fail|Suspense.*error|Loading chunk.*failed.*dynamic|loadable.*component.*error"
+    severity: "high"
+    impact_score: 70
+    suggested_fix: "Check if dynamically imported module path is correct. Add error boundary with fallback UI. Verify code splitting configuration. Check for circular dependencies."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-046"
+    pattern: "Next.js font loading failure"
+    description: "next/font failing to load or optimize fonts"
+    error_type: "nextjs_build_error"
+    match_regex: "next/font.*error|font.*optimization.*fail|@next/font.*error|Failed to.*font|FOUT|FOIT|font.*display.*swap.*fail"
+    severity: "low"
+    impact_score: 30
+    suggested_fix: "Check font file paths and formats. Verify Google Fonts availability. Add font-display: swap as fallback. Use local fonts if CDN fonts are unreliable."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  # ============================================================================
+  # WEB VITALS PERFORMANCE PATTERNS (KF-047 to KF-051)
+  # ============================================================================
+
+  - id: "KF-047"
+    pattern: "Poor Largest Contentful Paint (LCP)"
+    description: "LCP exceeds 2.5s threshold, indicating slow main content loading"
+    error_type: "web_vitals_lcp"
+    match_regex: "LCP.*[3-9]\\d{3}|LCP.*[1-9]\\d{4}|largest.*contentful.*paint.*(slow|poor|fail)|web-vitals.*LCP.*(poor|needs)"
+    severity: "high"
+    impact_score: 75
+    suggested_fix: "Optimize largest content element loading. Preload critical images. Use next/image with priority. Reduce server response time. Eliminate render-blocking resources. Check CDN performance."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-048"
+    pattern: "Poor Cumulative Layout Shift (CLS)"
+    description: "CLS exceeds 0.1 threshold, indicating unstable visual layout"
+    error_type: "web_vitals_cls"
+    match_regex: "CLS.*0\\.[2-9]|CLS.*[1-9]\\.|cumulative.*layout.*shift.*(poor|high|fail)|layout.*shift.*detected|web-vitals.*CLS.*(poor|needs)"
+    severity: "medium"
+    impact_score: 60
+    suggested_fix: "Add explicit width/height to images and embeds. Avoid inserting content above existing content. Use CSS contain property. Reserve space for dynamic content with min-height."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-049"
+    pattern: "Poor First Input Delay (FID)"
+    description: "FID exceeds 100ms threshold, indicating poor interactivity responsiveness"
+    error_type: "web_vitals_fid"
+    match_regex: "FID.*[2-9]\\d{2}|FID.*[1-9]\\d{3}|first.*input.*delay.*(slow|poor|fail)|web-vitals.*FID.*(poor|needs)"
+    severity: "high"
+    impact_score: 70
+    suggested_fix: "Break up long tasks. Defer non-critical JavaScript. Reduce JavaScript execution time. Use web workers for heavy computation. Optimize event handlers."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-050"
+    pattern: "Poor Interaction to Next Paint (INP)"
+    description: "INP exceeds 200ms threshold, indicating slow response to user interactions"
+    error_type: "web_vitals_inp"
+    match_regex: "INP.*[3-9]\\d{2}|INP.*[1-9]\\d{3}|interaction.*next.*paint.*(slow|poor|fail)|web-vitals.*INP.*(poor|needs)"
+    severity: "high"
+    impact_score: 72
+    suggested_fix: "Optimize event handlers. Use requestAnimationFrame for visual updates. Reduce DOM size. Avoid layout thrashing. Use CSS containment. Defer non-visible updates."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  - id: "KF-051"
+    pattern: "Poor Time to First Byte (TTFB)"
+    description: "TTFB exceeds 800ms threshold, indicating slow server response"
+    error_type: "web_vitals_ttfb"
+    match_regex: "TTFB.*[1-9]\\d{3}|time.*first.*byte.*(slow|poor|fail)|server.*response.*time.*(slow|high)|web-vitals.*TTFB.*(poor|needs)"
+    severity: "high"
+    impact_score: 68
+    suggested_fix: "Optimize server-side processing. Enable caching (CDN, Redis). Use ISR/SSG instead of SSR where possible. Check database query performance. Reduce middleware chain."
+    domain: "FRONTEND"
+    affected_flow: "browse"
+
+  # ============================================================================
+  # SHOPIFY PURCHASE FUNNEL PATTERNS (KF-052 to KF-059)
+  # ============================================================================
+
+  - id: "KF-052"
+    pattern: "Shopify discount code application failure"
+    description: "Discount or coupon code failing to apply at checkout"
+    error_type: "shopify_discount_error"
+    match_regex: "discount.*fail|coupon.*invalid|promo.*code.*error|/discount.*error|apply.*discount.*fail|DISCOUNT_NOT_FOUND"
+    severity: "high"
+    impact_score: 78
+    suggested_fix: "Verify discount code is active and valid in Shopify admin. Check discount eligibility rules (minimum order, customer group). Verify discount API endpoint. Check for expired or usage-limited codes."
+    domain: "SHOPIFY"
+    affected_flow: "checkout"
+
+  - id: "KF-053"
+    pattern: "Shopify inventory sync out-of-stock display error"
+    description: "Product showing as available/Add to Cart when actually out of stock due to inventory sync delay"
+    error_type: "shopify_inventory_error"
+    match_regex: "inventory.*sync|out.*of.*stock.*error|variant.*unavailable|inventory.*not.*available|product.*not.*available.*for.*sale|PRODUCT_NOT_AVAILABLE"
+    severity: "critical"
+    impact_score: 85
+    suggested_fix: "Check Shopify inventory sync settings. Verify webhook for inventory updates. Enable 'Stop selling when out of stock' in Shopify. Check multi-location inventory allocation."
+    domain: "SHOPIFY"
+    affected_flow: "cart"
+    is_conversion_blocking: true
+
+  - id: "KF-054"
+    pattern: "Shopify multi-currency conversion error"
+    description: "Currency conversion failing or showing incorrect prices in multi-currency store"
+    error_type: "shopify_checkout_error"
+    match_regex: "currency.*conversion.*error|multi.*currency.*fail|presentment.*currency.*error|price.*mismatch|exchange.*rate.*error|Shopify\\.currency.*error"
+    severity: "high"
+    impact_score: 80
+    suggested_fix: "Check Shopify Markets currency configuration. Verify currency conversion rounding rules. Check if Shopify Payments supports the target currency. Review currency formatting in theme."
+    domain: "SHOPIFY"
+    affected_flow: "checkout"
+
+  - id: "KF-055"
+    pattern: "Shopify tax calculation failure"
+    description: "Tax calculation failing or returning incorrect amounts at checkout"
+    error_type: "shopify_checkout_error"
+    match_regex: "tax.*calculation.*error|tax.*fail|tax.*rate.*error|duty.*calculation.*fail|tax.*exempt.*error|TAXES_MUST_BE_DEFINED"
+    severity: "critical"
+    impact_score: 88
+    suggested_fix: "Verify tax settings in Shopify admin. Check tax overrides for specific products/regions. Verify tax-exempt customer groups. Check third-party tax service (Avalara, TaxJar) integration."
+    domain: "SHOPIFY"
+    affected_flow: "checkout"
+    is_conversion_blocking: true
+
+  - id: "KF-056"
+    pattern: "Shopify shipping rate calculation timeout"
+    description: "Shipping rate calculation timing out or failing to return options"
+    error_type: "shopify_shipping_error"
+    match_regex: "shipping.*rate.*timeout|shipping.*calculation.*fail|carrier.*service.*error|no.*shipping.*rates|shipping.*rate.*error|SHIPPING_RATE_NOT_AVAILABLE"
+    severity: "critical"
+    impact_score: 86
+    suggested_fix: "Check carrier service API availability. Verify shipping zones and rates in Shopify admin. Check third-party shipping app integration. Add fallback flat-rate shipping option."
+    domain: "SHOPIFY"
+    affected_flow: "checkout"
+    is_conversion_blocking: true
+
+  - id: "KF-057"
+    pattern: "Shopify payment method display error"
+    description: "Payment methods not loading or displaying incorrectly at checkout"
+    error_type: "shopify_checkout_error"
+    match_regex: "payment.*method.*error|payment.*gateway.*not.*available|payment.*option.*fail|accelerated.*checkout.*error|Shopify\\.Checkout\\.Payment.*error"
+    severity: "critical"
+    impact_score: 92
+    suggested_fix: "Check payment gateway configuration in Shopify admin. Verify payment provider API keys. Check if payment methods are enabled for the customer's region. Test with different payment providers."
+    domain: "SHOPIFY"
+    affected_flow: "checkout"
+    is_conversion_blocking: true
+
+  - id: "KF-058"
+    pattern: "Shopify order confirmation page blank/missing"
+    description: "Order confirmation/thank-you page loading blank or with errors after successful payment"
+    error_type: "shopify_checkout_error"
+    match_regex: "thank.*you.*page.*error|order.*confirmation.*blank|/thank_you.*error|checkout.*complete.*fail|order.*status.*error|order.*confirm.*404"
+    severity: "high"
+    impact_score: 65
+    suggested_fix: "Check thank_you page template. Verify order status URL configuration. Check Shopify checkout settings for additional scripts. Review theme checkout customizations."
+    domain: "SHOPIFY"
+    affected_flow: "checkout"
+
+  - id: "KF-059"
+    pattern: "Shopify webhook delivery failure"
+    description: "Shopify webhook notifications failing to deliver to the storefront backend"
+    error_type: "shopify_webhook_error"
+    match_regex: "webhook.*delivery.*fail|webhook.*timeout|webhook.*4[0-9]{2}|webhook.*5[0-9]{2}|WEBHOOK_DELIVERY_FAILED|webhook.*retry"
+    severity: "high"
+    impact_score: 70
+    suggested_fix: "Check webhook endpoint URL and SSL certificate. Verify endpoint is responding within 5 seconds. Check server capacity for webhook processing. Review webhook event subscriptions in Shopify admin."
+    domain: "SHOPIFY"
+    affected_flow: "unknown"

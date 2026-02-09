@@ -1,0 +1,64 @@
+# ============================================================================
+# Team Ownership Configuration
+# ============================================================================
+#
+# HOW TO GET CHANNEL IDs:
+#   1. Open Slack → Right-click channel → "View channel details"
+#   2. Scroll to bottom → Copy "Channel ID" (starts with C0...)
+#   OR type /channelid in the channel
+#
+# HOW TO GET USER IDs:
+#   1. Click on user profile → Click "⋮ More" → "Copy member ID"
+#   2. User IDs start with U0...
+#
+# ============================================================================
+
+# Domain-based ownership (FE vs BE)
+# U08MVKMARNX = Sumit Tomar
+# U09CNKASRC0 = Umang
+domain_owners:
+  FRONTEND:
+    name: "Umang"
+    slack_id: "U09CNKASRC0"
+  BACKEND:
+    name: "Sumit"
+    slack_id: "U08MVKMARNX"
+  INFRASTRUCTURE:
+    name: "Sumit"
+    slack_id: "U08MVKMARNX"
+  THIRD_PARTY:
+    name: "Umang"
+    slack_id: "U09CNKASRC0"
+
+teams:
+  frontend:
+    slack_channel: "C0ADMPKDP42"
+    owners:
+      - "U09CNKASRC0"  # Umang - FE Owner
+    owns:
+      - "console_error"
+      - "console_warning"
+      - "js_runtime_error"
+      - "visual_issue"
+      - "rendering_issue"
+      - "hydration_error"
+      - "resource_error"
+
+  backend:
+    slack_channel: "C0ADMPKDP42"
+    owners:
+      - "U08MVKMARNX"  # Sumit - BE Owner
+    owns:
+      - "network_4xx"
+      - "network_5xx"
+      - "network_cors"
+      - "network_timeout"
+
+# Store-specific ownership overrides
+store_overrides:
+  "BBLUNT Dev":
+    default_channel: "C0ADMPKDP42"
+    severity_threshold: "high"
+
+# Fallback channel if no team matches
+default_channel: "C0ADMPKDP42"

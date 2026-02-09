@@ -1,0 +1,66 @@
+sites:
+  - name: "Wellversed"
+    url: "https://store.wellversed.in"
+    environment: "production"
+    backend_type: "shopify_gokwik"
+    scan_flows:
+      - homepage
+      - product_page
+      - cart
+      - checkout_init
+    alert_channel: "C0ADMPKDP42"
+
+  - name: "PlixKids"
+    url: "https://store.plixkids.com"
+    environment: "production"
+    backend_type: "custom_gokwik"
+    scan_flows:
+      - homepage
+      - product_page
+      - cart
+      - checkout_init
+    alert_channel: "C0ADMPKDP42"
+
+  - name: "BBLUNT Dev"
+    url: "https://bblunt-dev-custom.primathontech.co.in"
+    environment: "staging"
+    backend_type: "custom_gokwik"
+    scan_flows:
+      - homepage
+      - product_page
+    alert_channel: "C0ADMPKDP42"
+    severity_threshold: "high"  # only alert on high severity for staging
+
+  - name: "Aqualogica"
+    url: "https://store.aqualogica.in"
+    environment: "production"
+    backend_type: "shopify_gokwik"
+    scan_flows:
+      - homepage
+      - product_page
+      - cart
+      - checkout_init
+    alert_channel: "C0ADMPKDP42"
+
+  - name: "Weryze"
+    url: "https://weryze.com"
+    environment: "production"
+    backend_type: "shopify_only"
+    scan_flows:
+      - homepage
+      - product_page
+      - cart
+      - checkout_init
+    alert_channel: "C0ADMPKDP42"
+
+scan_settings:
+  scheduled_interval_minutes: 30
+  screenshot_on_error: true
+  viewport:
+    width: 1440
+    height: 900
+  mobile_viewport:
+    width: 375
+    height: 812
+  timeout_ms: 30000
+  max_retries: 2

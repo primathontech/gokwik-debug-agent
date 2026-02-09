@@ -1,0 +1,50 @@
+{
+  "name": "gokwik-debug-agent",
+  "version": "1.0.0",
+  "description": "AI-powered developer support agent for GoKwik storefronts - detects, classifies, and routes FE issues with a self-learning knowledge base",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node src/index.ts",
+    "scan": "ts-node src/index.ts --mode scan",
+    "scan:single": "ts-node src/index.ts --mode scan-single --url",
+    "dev": "ts-node-dev --respawn src/index.ts",
+    "test": "jest --config jest.config.js",
+    "kb:list": "ts-node src/cli/kb-list.ts",
+    "kb:stats": "ts-node src/cli/kb-stats.ts",
+    "dashboard": "ts-node src/dashboard/server.ts",
+    "open:aqualogica": "ts-node open-aqualogica.ts",
+    "postinstall": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@slack/bolt": "^4.1.0",
+    "@slack/web-api": "^7.7.0",
+    "better-sqlite3": "^11.7.0",
+    "chalk": "^4.1.2",
+    "commander": "^13.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.4",
+    "express": "^4.21.0",
+    "node-cron": "^3.0.3",
+    "ora": "^5.4.1",
+    "playwright": "^1.49.0",
+    "uuid": "^11.0.0",
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/cors": "^2.8.17",
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^22.10.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/uuid": "^10.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.0",
+    "ts-node": "^10.9.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.7.0"
+  }
+}
