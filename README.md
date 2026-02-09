@@ -37,23 +37,35 @@ cp config/.env.example config/.env
 
 Edit `config/.env` with your API keys (Slack, Anthropic, etc.)
 
-### Other Commands
+## Commands Reference
+
+| Command | Description |
+|---------|-------------|
+| `npm run open:aqualogica` | Open Aqualogica website in headed browser |
+| `npm run dashboard` | Start the web dashboard |
+| `npm start` | Run the full debug agent |
+| `npm run scan` | Run site scan on all configured sites |
+| `npm run scan:single -- <URL>` | Scan a single URL |
+| `npm run dev` | Development mode with hot reload |
+| `npm run build` | Compile TypeScript to JavaScript |
+| `npm test` | Run tests |
+| `npm run kb:list` | List knowledge base entries |
+| `npm run kb:stats` | Show knowledge base statistics |
+
+### Examples
 
 ```bash
-# Run the full debug agent
-npm start
-
-# Run a site scan
-npm run scan
-
-# Scan a single URL
-npm run scan:single -- <URL>
+# Open Aqualogica in browser
+npm run open:aqualogica
 
 # Start the dashboard
 npm run dashboard
 
-# Development mode with hot reload
-npm run dev
+# Scan a specific website
+npm run scan:single -- https://aqualogica.in
+
+# Run the full agent (scans all configured sites)
+npm start
 ```
 
 ## Project Structure
